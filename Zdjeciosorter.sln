@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zdjeciosorter", "Zdjeciosorter\Zdjeciosorter.csproj", "{A50F47C8-1BD4-4796-BF2D-EE92525C068E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A50F47C8-1BD4-4796-BF2D-EE92525C068E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A50F47C8-1BD4-4796-BF2D-EE92525C068E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A50F47C8-1BD4-4796-BF2D-EE92525C068E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A50F47C8-1BD4-4796-BF2D-EE92525C068E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2928EB55-4214-4E09-B051-764EACFC7900}
+	EndGlobalSection
+EndGlobal
