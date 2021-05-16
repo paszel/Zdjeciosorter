@@ -40,6 +40,7 @@
             this.selectedDestinationFolderLabel = new System.Windows.Forms.Label();
             this.takeSubFoldersChkbx = new System.Windows.Forms.CheckBox();
             this.disclaimer = new System.Windows.Forms.Label();
+            this.progressCounerLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // startBtn
@@ -137,11 +138,20 @@
             this.disclaimer.Text = "Program kopiuje zdjęcia i wideo do katalogu docelowego grupując je po roku utworz" +
     "enia.";
             // 
+            // progressCounerLabel
+            // 
+            this.progressCounerLabel.AutoSize = true;
+            this.progressCounerLabel.Location = new System.Drawing.Point(432, 252);
+            this.progressCounerLabel.Name = "progressCounerLabel";
+            this.progressCounerLabel.Size = new System.Drawing.Size(0, 13);
+            this.progressCounerLabel.TabIndex = 14;
+            // 
             // Form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(514, 331);
+            this.Controls.Add(this.progressCounerLabel);
             this.Controls.Add(this.disclaimer);
             this.Controls.Add(this.takeSubFoldersChkbx);
             this.Controls.Add(this.selectedDestinationFolderLabel);
@@ -172,6 +182,7 @@
         private System.Windows.Forms.Label selectedDestinationFolderLabel;
         private System.Windows.Forms.CheckBox takeSubFoldersChkbx;
         private System.Windows.Forms.Label disclaimer;
+        private System.Windows.Forms.Label progressCounerLabel;
     }
 }
 

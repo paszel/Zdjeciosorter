@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
@@ -29,13 +27,8 @@ namespace Zdjeciosorter
 
         private async void startBtn_Click(object sender, EventArgs e)
         {
-            cancelBtn.Enabled = true;
             token = source.Token;
             await Task.Run(() => CopyFiles(), token).ConfigureAwait(false);
-
-            progressBar.Visible = false;
-            progressLabel.Visible = false;
-            cancelBtn.Enabled = false;
 
             if (!invalidCancelled)
             {
@@ -45,40 +38,28 @@ namespace Zdjeciosorter
 
         private void CopyFiles()
         {
-            invalidCancelled = false;
             var sourcePath = sourceFolderBrowserDialog.SelectedPath;
             var destinationPath = destinationFolderBrowserDialog.SelectedPath;
             var searchOption = takeSubFoldersChkbx.Checked ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
-            if(string.IsNullOrEmpty(sourcePath) || string.IsNullOrEmpty(destinationPath))
+            var errorMessage = "";
+            (invalidCancelled, errorMessage) = ValidatePaths();
+
+            if (invalidCancelled)
             {
-                MessageBox.Show("Folder źródłowy i docelowy muszą być wybrane!");
-                invalidCancelled = true;
+                MessageBox.Show(errorMessage);
                 return;
             }
 
-            if (!Directory.Exists(sourcePath))
-            {
-                MessageBox.Show("Ścieżka do folderu źródłowego nie istnieje.");
-                invalidCancelled = true;
-                return;
-            }
-
-            if (!Directory.Exists(destinationPath))
-            {
-                MessageBox.Show("Ścieżka do folderu docelowego nie istnieje.");
-                invalidCancelled = true;
-                return;
-            }
-
-            var fileExtentions = new string[] { ".gif",".jpeg", ".jpg",".bmp",".png",".mp4",".mov",".wmv",".avi"};
+            var fileExtentions = new string[] { ".gif", ".jpeg", ".jpg", ".bmp", ".png", ".mp4", ".mov", ".wmv", ".avi" };
 
             string[] filesToCopy = Directory.EnumerateFiles(sourcePath, "*.*", searchOption)
                 .Where(x => fileExtentions.Any(ex => x.EndsWith(ex)))
                 .ToArray();
-            
-            progressLabel.Invoke(new MethodInvoker(delegate { Visible = true; }));
-            progressBar.Invoke(new MethodInvoker(delegate
+
+            cancelBtn.Invoke(new MethodInvoker(() => Enabled = true));
+            progressLabel.Invoke(new MethodInvoker(() => Visible = true));
+            progressBar.Invoke(new MethodInvoker(() =>
             {
                 progressBar.Value = 0;
                 progressBar.Maximum = filesToCopy.Length;
@@ -96,16 +77,47 @@ namespace Zdjeciosorter
                 var createdDate = GetDateTaken(file);
                 var dest = Path.Combine(destinationPath, createdDate.Year.ToString());
 
-                if (!Directory.Exists(dest)){
+                if (!Directory.Exists(dest))
+                {
                     Directory.CreateDirectory(dest);
                 }
 
                 File.Copy(file, Path.Combine(dest, Path.GetFileName(file)), true);
 
-                progressBar.Invoke(new MethodInvoker(delegate
+                progressBar.Invoke(new MethodInvoker(() => progressBar.Value += 1));
+            }
+
+            cancelBtn.Invoke(new MethodInvoker(() => Enabled = false));
+            progressLabel.Invoke(new MethodInvoker(() => Visible = false));
+            progressBar.Invoke(new MethodInvoker(() =>
+            {
+                progressBar.Value = 0;
+                progressBar.Visible = false;
+            }));
+
+            (bool result, string errorMsg) ValidatePaths()
+            {
+                if (string.IsNullOrEmpty(sourcePath) || string.IsNullOrEmpty(destinationPath))
                 {
-                    progressBar.Value +=1;
-                }));
+                    return (true, "Folder źródłowy i docelowy muszą być wybrane!");
+                }
+
+                if (sourcePath.Equals(destinationPath, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return (true, "Folder źródłowy i docelowy nie mogą być takie same!");
+                }
+
+                if (!Directory.Exists(sourcePath))
+                {
+                    return (true, "Ścieżka do folderu źródłowego nie istnieje.");
+                }
+
+                if (!Directory.Exists(destinationPath))
+                {
+                    return (true, "Ścieżka do folderu docelowego nie istnieje.");
+                }
+
+                return (false, "");
             }
         }
 
