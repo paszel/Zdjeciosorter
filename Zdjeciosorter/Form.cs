@@ -15,9 +15,7 @@ namespace Zdjeciosorter
 {
     public partial class Form : System.Windows.Forms.Form
     {
-        readonly CancellationTokenSource source = new CancellationTokenSource();
-        CancellationToken token;
-        bool invalidCancelled = false;
+        CancellationTokenSource cancellatonTokenSource;
 
         public Form()
         {
@@ -27,75 +25,73 @@ namespace Zdjeciosorter
 
         private async void startBtn_Click(object sender, EventArgs e)
         {
-            token = source.Token;
-            await Task.Run(() => CopyFiles(), token).ConfigureAwait(false);
+            SetButtons(false);
 
-            if (!invalidCancelled)
+            using (var cts = new CancellationTokenSource())
             {
-                MessageBox.Show(token.IsCancellationRequested ? "Operacja anulowana." : "Operacja zakończona.");
+                cancellatonTokenSource = cts;
+                var token = cts.Token;
+
+                var (invalidCancelled, errorMsg) = await Task.Run(() => CopyFiles(token), token);
+
+                if (invalidCancelled)
+                {
+                    MessageBox.Show(errorMsg);
+                }
+                else
+                {
+                    MessageBox.Show(token.IsCancellationRequested ? "Operacja anulowana." : "Operacja zakończona.");
+                }
             }
+
+            SetProgressBar(false, 100);
+            SetButtons(true);
         }
 
-        private void CopyFiles()
+        private (bool invalidCancelled, string errorMsg) CopyFiles(CancellationToken token)
         {
             var sourcePath = sourceFolderBrowserDialog.SelectedPath;
             var destinationPath = destinationFolderBrowserDialog.SelectedPath;
             var searchOption = takeSubFoldersChkbx.Checked ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
-            var errorMessage = "";
-            (invalidCancelled, errorMessage) = ValidatePaths();
+            var result = ValidatePaths();
 
-            if (invalidCancelled)
+            if (!result.invalidCancelled)
             {
-                MessageBox.Show(errorMessage);
-                return;
-            }
+                var fileExtentions = new string[] { ".gif", ".jpeg", ".jpg", ".bmp", ".png", ".mp4", ".mov", ".wmv", ".avi" };
 
-            var fileExtentions = new string[] { ".gif", ".jpeg", ".jpg", ".bmp", ".png", ".mp4", ".mov", ".wmv", ".avi" };
+                string[] filesToCopy = Directory.EnumerateFiles(sourcePath, "*.*", searchOption)
+                    .Where(x => fileExtentions.Any(ex => x.EndsWith(ex)))
+                    .ToArray();
 
-            string[] filesToCopy = Directory.EnumerateFiles(sourcePath, "*.*", searchOption)
-                .Where(x => fileExtentions.Any(ex => x.EndsWith(ex)))
-                .ToArray();
+                SetProgressBar(true, filesToCopy.Length);
 
-            cancelBtn.Invoke(new MethodInvoker(() => Enabled = true));
-            progressLabel.Invoke(new MethodInvoker(() => Visible = true));
-            progressBar.Invoke(new MethodInvoker(() =>
-            {
-                progressBar.Value = 0;
-                progressBar.Maximum = filesToCopy.Length;
-                progressBar.Visible = true;
-            }));
-
-            foreach (var file in filesToCopy)
-            {
-                if (token.IsCancellationRequested)
+                Regex regex = new Regex(":");
+                foreach (var file in filesToCopy)
                 {
-                    Debug.WriteLine("Cancelled by token");
-                    break;
+                    if (token.IsCancellationRequested)
+                    {
+                        Debug.WriteLine("Cancelled by token");
+                        break;
+                    }
+
+                    var createdDate = GetDateTaken(regex, file);
+                    var dest = Path.Combine(destinationPath, createdDate.Year.ToString());
+
+                    if (!Directory.Exists(dest))
+                    {
+                        Directory.CreateDirectory(dest);
+                    }
+
+                    File.Copy(file, Path.Combine(dest, Path.GetFileName(file)), true);
+
+                    UpdateProgessBar();
                 }
 
-                var createdDate = GetDateTaken(file);
-                var dest = Path.Combine(destinationPath, createdDate.Year.ToString());
-
-                if (!Directory.Exists(dest))
-                {
-                    Directory.CreateDirectory(dest);
-                }
-
-                File.Copy(file, Path.Combine(dest, Path.GetFileName(file)), true);
-
-                progressBar.Invoke(new MethodInvoker(() => progressBar.Value += 1));
             }
+            return result;
 
-            cancelBtn.Invoke(new MethodInvoker(() => Enabled = false));
-            progressLabel.Invoke(new MethodInvoker(() => Visible = false));
-            progressBar.Invoke(new MethodInvoker(() =>
-            {
-                progressBar.Value = 0;
-                progressBar.Visible = false;
-            }));
-
-            (bool result, string errorMsg) ValidatePaths()
+            (bool invalidCancelled, string errorMsg) ValidatePaths()
             {
                 if (string.IsNullOrEmpty(sourcePath) || string.IsNullOrEmpty(destinationPath))
                 {
@@ -135,12 +131,38 @@ namespace Zdjeciosorter
 
         private void cancelBtn_Click(object sender, EventArgs e)
         {
-            source.Cancel();
+            cancellatonTokenSource?.Cancel();
         }
 
-        private static Regex regex = new Regex(":");
+        void SetButtons(bool isStartButtonEnabled)
+        {
+            Invoke((MethodInvoker)delegate
+            {
+                startBtn.Enabled = isStartButtonEnabled;
+                cancelBtn.Enabled = !isStartButtonEnabled;
+            });
+        }
 
-        public static DateTime GetDateTaken(string path)
+        void SetProgressBar(bool isVisible, int maxValue)
+        {
+            Invoke((MethodInvoker)delegate
+            {
+                progressLabel.Visible = isVisible;
+                progressBar.Value = 0;
+                progressBar.Maximum = maxValue;
+                progressBar.Visible = isVisible;
+            });
+        }
+
+        void UpdateProgessBar()
+        {
+            Invoke((MethodInvoker)delegate
+            {
+                progressBar.Value += 1;
+            });
+        }
+
+        public static DateTime GetDateTaken(Regex regex, string path)
         {
             int DateTakenValue = 0x9003; //36867;
             var creationDate = File.GetCreationTime(path);
@@ -169,7 +191,7 @@ namespace Zdjeciosorter
             {
                 Debug.WriteLine($"Exception occured for {path}. {ex.Message}");
             }
-            
+
             return result;
         }
     }
